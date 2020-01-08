@@ -224,7 +224,6 @@ end
 defmodule Xmlstruct.Utils do
   @moduledoc """
   """
-  import SweetXml
 
   @doc """
   Convert an element tree created by SweetXml.parse to an Elixir struct.
@@ -261,6 +260,20 @@ defmodule Xmlstruct.Utils do
   end
 
   @doc """
+  Convert XML to structs, given the XML content in a binary string.
+
+  ## Examples
+
+      iex> text = File.read!("path/to/document.xml")
+      iex> element = Xmlstruct.Utils.convert_string(text)
+      iex> IO.puts(element.name)
+  
+  """
+  def convert_string(text) do
+    text |> SweetXml.parse() |> convert()
+  end
+
+  @doc """
   Find and return a nested tuple (a tree) of elements.
   These tuples are the Xmerl data structures.
   """
@@ -269,13 +282,6 @@ defmodule Xmlstruct.Utils do
     tree = File.stream!(file_path) |> SweetXml.parse()
     tree
   end
-
-  def get_element_list(file_path) do
-    File.stream!(file_path)
-    |> SweetXml.parse()
-    |> SweetXml.xpath(~x"//*"l)
-  end
-
 
   @doc """
   Show the content of the top level element in an element tree.
@@ -434,13 +440,21 @@ defmodule Xmlstruct.Utils do
 
 end
 
-#defmodule Xmlstruct.Test do
-#
-#  def test01(path) do
-#    element = Xmlstruct.Utils.convert(path)
-#    Xmlstruct.Utils.walk_tree(element, fn (el) ->
-#      IO.puts("tag: #{el.name}") end)
-#    element
-#  end
-#
-#end
+defmodule Xmlstruct.Test do
+
+  @doc """
+  Print the tags (names) of all the elements in an XML file.
+
+  ## Examples
+
+      iex> Xmlstruct.Test.print_all_tags "path/to/document.xml"
+
+  """
+  def print_all_tags(path) do
+    element = Xmlstruct.Utils.convert(path)
+    Xmlstruct.Utils.walk_tree(element, fn (el) ->
+      IO.puts("tag: #{el.name}") end)
+    #element
+  end
+
+end
