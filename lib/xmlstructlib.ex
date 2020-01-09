@@ -128,7 +128,9 @@ defmodule Xmlstruct.Conversions do
 
   ## Examples
 
-    File.stream!("Data/test02.xml") |> SweetXml.parse() |> Xml.Struct.convert()
+      iex> File.stream!("path/to/document.xml") |> SweetXml.parse |> Xmlstruct.Utils.convert
+
+      iex> Xmlstruct.Utils.convert("path/to/document.xml")
 
   """
 
@@ -223,6 +225,7 @@ end
 
 defmodule Xmlstruct.Utils do
   @moduledoc """
+  Utility and helper funtions for converting Xmerl records to Elixir structs.
   """
 
   @doc """
@@ -233,6 +236,7 @@ defmodule Xmlstruct.Utils do
   ## Examples
 
       File.stream!("path/to/doc.xml") |> SweetXml.parse() |> Xml.Struct.convert()
+
       Xml.Struct.convert("path/to/doc.xml")
 
 
@@ -244,7 +248,7 @@ defmodule Xmlstruct.Utils do
   @spec convert(String.t()) :: Map.t()
   def convert(path) when is_binary(path) do
     #File.stream!(path) |> SweetXml.parse() |> convert()
-    get_tree(path) |> convert()
+    get_xmerl_tree(path) |> convert()
   end
   @spec convert(Tuple.t()) :: Map.t()
   def convert(tree) do
@@ -269,6 +273,7 @@ defmodule Xmlstruct.Utils do
       iex> IO.puts(element.name)
   
   """
+  @spec convert(String.t()) :: Map.t()
   def convert_string(text) do
     text |> SweetXml.parse() |> convert()
   end
@@ -276,9 +281,15 @@ defmodule Xmlstruct.Utils do
   @doc """
   Find and return a nested tuple (a tree) of elements.
   These tuples are the Xmerl data structures.
+
+  ## Examples
+
+      rec = Xmlstruct.Utils.get_xmerl_tree("path/to/doc.xml")
+      element_recs = SweetXml.xpath(rec, ~x".//tag-name"l)
+
   """
-  @spec get_tree(String.t()) :: Tuple.t()
-  def get_tree(file_path) when is_binary(file_path) do
+  @spec get_xmerl_tree(String.t()) :: Tuple.t()
+  def get_xmerl_tree(file_path) when is_binary(file_path) do
     tree = File.stream!(file_path) |> SweetXml.parse()
     tree
   end

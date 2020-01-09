@@ -63,18 +63,28 @@ In `iex`, you can type "h Xmlstruct.Utils.some_func" to get help on
 most of the helper functions in `Xmlstruct.Utils`.
 
 `Sweetxml` provides support for XPath.  `Xmlelixirstructs` does not.
-You can work around this by searching for an element, then
-converting it using `Xmlelixirstructs`.  Here is an example:
+You can work around this by using the capabilities of *both*
+`Sweexml` and `Xmlelixirstructs`.  First create the `Sweetxml`
+`Xmerl` record structure, then use `SweetXml.xpath` to search for an
+element, and then convert it to Elixir `Struct` using
+`Xmlelixirstructs`.  Here is an example:
 
 ```elixir
-iex> rec = File.stream!("Data/test02.xml") |> SweetXml.parse
-iex> rec1 = SweetXml.xpath(rec, ~x".//ns2:bbb")
+iex> rec = File.stream!("path/to/document.xml") |> SweetXml.parse
+iex> rec1 = SweetXml.xpath(rec, ~x".//some-element-name")
 iex> element = Xmlstruct.Utils.convert(rec1)
 iex> IO.puts(element.name)
 ```
 
+And another example:
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/xmlstructs](https://hexdocs.pm/xmlstructs).
+```elixir
+path = "path/to/document.xml"
+pattern = ~x".//bbb|ddd"l
+File.stream!(path)
+|> SweetXml.parse
+|> SweetXml.xpath(pattern)
+|> Enum.map(&Xmlstruct.Utils.convert/1)
+|> Enum.each(fn el -> IO.puts(el.name) end)
+```
 
