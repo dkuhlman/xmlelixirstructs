@@ -226,6 +226,34 @@ end
 defmodule Xmlstruct.Utils do
   @moduledoc """
   Utility and helper funtions for converting Xmerl records to Elixir structs.
+
+  Public functions:
+
+  - `convert` -- Convert an element tree created by SweetXml.parse
+    to an Elixir struct.
+
+  - `convert_string` -- Convert XML string to Elixir struct.
+
+  - `get_xmerl_tree` -- Create the Xmerl tree from an XML file using SweetXml.
+
+  - `show_content` -- Show the content of the top level element in
+    an element tree.
+
+  - `show_element_tree` -- Write the tags (names) of the elements in
+    an element tree to stdout or a file.
+
+  - `write_element_tree_to_file` -- Write the tags (names) of the
+    elements in an element tree to a file.
+
+  - `walk_tree` -- Walk an element tree.  Call a function on each element.
+
+  - `tree_to_stream` -- Create a stream of all the elements in a tree.
+
+  - `tree_to_list` -- Create a list of all the elements in a tree.
+
+  - `elements_from_content` -- Select and return all the elements
+    (children) in the top level content of an element.
+
   """
 
   @doc """
@@ -413,7 +441,8 @@ defmodule Xmlstruct.Utils do
   end
 
   @doc """
-  Select and return all the elements in the top level content of an element.
+  Select and return all the elements (children) in the top level content
+  of an element.
 
   ## Examples
   
