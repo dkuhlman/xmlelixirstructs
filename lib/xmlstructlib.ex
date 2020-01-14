@@ -254,6 +254,8 @@ defmodule Xmlstruct.Utils do
   - `elements_from_content` -- Select and return all the elements
     (children) in the top level content of an element.
 
+  - `reduce` -- Invoke `func(element, acc)` on each element in an element tree.
+
   """
 
   @doc """
@@ -476,6 +478,34 @@ defmodule Xmlstruct.Utils do
   def list_to_list([], acc), do: acc
   def list_to_list([el | rest], acc) do
     list_to_list(rest, tree_to_list(el, acc))
+  end
+
+  @doc """
+  Invoke `func(element, acc)` on each element in an element tree.
+
+  Function `func` should take two arguments: an `Xmlstruct.Element`
+  and an accumulator.  The initial value of the accumulator
+  is `acc`.
+
+  ## Examples
+
+      iex> # count elements
+      iex> root_element |> Xmlstruct.Utils.reduce(0, fn (_, acc) -> acc + 1 end)
+      iex> # count attributes
+      iex> Xmlstruct.Utils.reduce(root, 0, fn (el, acc) -> acc + length(el.attributes) end)
+
+  """
+  @spec reduce(Map.t(), any(), (Map.t(), any() -> any())) :: any()
+  def reduce(element, acc, func) do
+    reduce_aux([element], acc, func)
+  end
+
+  defp reduce_aux([], acc, _func), do: acc
+  defp reduce_aux([element | elements], acc, func) do
+    acc1 = func.(element, acc)
+    acc2 = reduce_aux(
+      Xmlstruct.Utils.elements_from_content(element), acc1, func)
+    reduce_aux(elements, acc2, func)
   end
 
 end
