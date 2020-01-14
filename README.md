@@ -1,30 +1,22 @@
-# Xmlelixirstructs
+# XmlElixirStructs
 
 ## Description
 
-`Xmlelixirstructs` builds on top of `Sweetxml`.  `Sweetxml` is a layer on top of Xmerl.  `Xmlelixirstructs` converts the Xmerl
-records in a parsed document produced by `Sweetxml` into Elixir
+`XmlElixirStructs` builds on top of `SweetXml`.  `SweetXml` is a layer on top of Xmerl.  `XmlElixirStructs` converts the Xmerl
+records in a parsed document produced by `SweetXml` into Elixir
 structs.
 
-For information about `Sweetxml` see:
-[Sweetxml](https://hexdocs.pm/sweet_xml/SweetXml.html).
+For information about `SweetXml` see:
+[SweetXml](https://hexdocs.pm/sweet_xml/SweetXml.html).
 
-You can find `Xmlelixirstructs` here:
-[Xmlelixirstructs](https://github.com/dkuhlman/xmlelixirstructs).
-
-Where to find stuff:
-
-- The XML struct definitions are in `lib/xmlstructlib.ex`.  That
-  file also contains functions (`convert_*`) that convert individual
-  Xmerl record types.
-
-- A variety of helper functions and utilities are in
-  `lib/xmlstructlib.ex`.
+You can find `XmlElixirStructs` here:
+[XmlElixirStructs](https://github.com/dkuhlman/xmlelixirstructs).
 
 One benefit of this capability is that tab completion on structs
 works in `iex`.  For example, after parsing and converting an XML
-document to Elixir structs, type "element." and then press TAB to
-see a list of the fields in an element.
+document to Elixir structs and capturing the root element in
+variable `root`, type "root." and then press TAB to
+see a list of the fields in that element.
 
 
 ## Usage
@@ -39,6 +31,15 @@ def deps do
   ]
 end
 ```
+
+Where to find stuff:
+
+- The XML struct definitions are in `lib/xmlstructlib.ex`.  That
+  file also contains functions (`convert_*`) that convert individual
+  Xmerl record types.
+
+- A variety of helper functions and utilities are in module
+  `Xmlstruct.Utils` in `lib/xmlstructlib.ex`.
 
 
 ## Examples
@@ -62,14 +63,15 @@ Look in module `Xmlstruct.Utils` for additional helper functions.
 In `iex`, you can type "h Xmlstruct.Utils.some_func" to get help on
 most of the helper functions in `Xmlstruct.Utils`.
 
-`Sweetxml` provides support for XPath.  `Xmlelixirstructs` does not.
+`SweetXml` provides support for XPath.  `XmlElixirStructs` does not.
 You can work around this by using the capabilities of *both*
-`Sweexml` and `Xmlelixirstructs`.  First create the `Sweetxml`
+`SweetXml` and `XmlElixirStructs`.  First create the `SweetXml`
 `Xmerl` record structure, then use `SweetXml.xpath` to search for an
-element, and then convert it to Elixir `Struct` using
-`Xmlelixirstructs`.  Here is an example:
+element, and then convert that Xmerl record to an Elixir `Struct` using
+`XmlElixirStructs`.  Here is an example:
 
 ```elixir
+iex> import SweetXml
 iex> rec = File.stream!("path/to/document.xml") |> SweetXml.parse
 iex> rec1 = SweetXml.xpath(rec, ~x".//some-element-name")
 iex> element = Xmlstruct.Utils.convert(rec1)
