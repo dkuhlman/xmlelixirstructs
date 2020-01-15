@@ -41,6 +41,12 @@ Where to find stuff:
 - A variety of helper functions and utilities are in module
   `Xmlstruct.Utils` in `lib/xmlstructlib.ex`.
 
+The following will show you a list of helper functions:
+
+```elixir
+iex> h Xmlstruct.Utils.reduce
+```
+
 
 ## Examples
 

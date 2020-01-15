@@ -229,7 +229,10 @@ defmodule Xmlstruct.Utils do
 
   Public functions:
 
-  - `convert` -- Convert an element tree created by SweetXml.parse
+  - `convert(path)` -- Convert an XML document/file to Elixir struct.
+    to an Elixir struct.
+
+  - `convert(xmerl_rec)` -- Convert an element tree created by SweetXml.parse
     to an Elixir struct.
 
   - `convert_string` -- Convert XML string to Elixir struct.
