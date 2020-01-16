@@ -122,67 +122,20 @@ defmodule Xmlstruct.Comment do
   ]
 end
 
-defmodule Xmlstruct.Conversions do
+defmodule Xmlstruct.XmerlToStructConversions do
   @moduledoc """
   Functions for converting Erlang Xmerl tuples to Elixir structs.
 
   ## Examples
 
-      iex> File.stream!("path/to/document.xml") |> SweetXml.parse |> Xmlstruct.Utils.convert
+      iex> File.stream!("path/to/document.xml") |> SweetXml.parse |> Xmlstruct.Utils.convert_to_struct
 
-      iex> Xmlstruct.Utils.convert("path/to/document.xml")
+      iex> Xmlstruct.Utils.convert_to_struct("path/to/document.xml")
 
   """
 
   require XmerlRecs
   require Xmlstruct.Element
-
-  @doc """
-  Convert a namespace.
-  """
-  def convert_namespace(item) do
-    namespace = %Xmlstruct.Namespace{
-      default: XmerlRecs.xmlNamespace(item, :default),
-      nodes: XmerlRecs.xmlNamespace(item, :nodes),
-    }
-    namespace
-  end
-
-  def convert_comment(item) do
-    %Xmlstruct.Comment{
-      parents: XmerlRecs.xmlComment(item, :parents),
-      pos: XmerlRecs.xmlComment(item, :pos),
-      language: XmerlRecs.xmlComment(item, :language),
-      value: XmerlRecs.xmlComment(item, :value),
-    }
-  end
-
-  def convert_text(item) do
-    text = %Xmlstruct.Text{
-      parents: XmerlRecs.xmlText(item, :parents),
-      pos: XmerlRecs.xmlText(item, :pos),
-      language: XmerlRecs.xmlText(item, :language),
-      value: XmerlRecs.xmlText(item, :value),
-      type: XmerlRecs.xmlText(item, :type),
-    }
-    text
-  end
-
-  def convert_element_content(content) do
-    converted_content = Enum.map(content, fn (item) ->
-      key = elem(item, 0)
-      case key do
-        :xmlText ->
-          convert_text(item)
-        :xmlElement ->
-          convert_element(item)
-        :xmlComment ->
-          convert_comment(item)
-        _ -> :error
-      end
-    end)
-    converted_content
-  end
 
   def convert_attribute(attr) do
     attr = %Xmlstruct.Attribute{
@@ -197,6 +150,15 @@ defmodule Xmlstruct.Conversions do
       normalized: XmerlRecs.xmlAttribute(attr, :normalized),
     }
     attr
+  end
+
+  def convert_comment(item) do
+    %Xmlstruct.Comment{
+      parents: XmerlRecs.xmlComment(item, :parents),
+      pos: XmerlRecs.xmlComment(item, :pos),
+      language: XmerlRecs.xmlComment(item, :language),
+      value: XmerlRecs.xmlComment(item, :value),
+    }
   end
 
   def convert_element(element) do
@@ -221,6 +183,126 @@ defmodule Xmlstruct.Conversions do
     elstruct
   end
 
+  def convert_element_content(content) do
+    converted_content = Enum.map(content, fn (item) ->
+      key = elem(item, 0)
+      case key do
+        :xmlText ->
+          convert_text(item)
+        :xmlElement ->
+          convert_element(item)
+        :xmlComment ->
+          convert_comment(item)
+        _ -> :error
+      end
+    end)
+    converted_content
+  end
+
+  def convert_namespace(item) do
+    namespace = %Xmlstruct.Namespace{
+      default: XmerlRecs.xmlNamespace(item, :default),
+      nodes: XmerlRecs.xmlNamespace(item, :nodes),
+    }
+    namespace
+  end
+
+  def convert_text(item) do
+    text = %Xmlstruct.Text{
+      parents: XmerlRecs.xmlText(item, :parents),
+      pos: XmerlRecs.xmlText(item, :pos),
+      language: XmerlRecs.xmlText(item, :language),
+      value: XmerlRecs.xmlText(item, :value),
+      type: XmerlRecs.xmlText(item, :type),
+    }
+    text
+  end
+
+end
+
+defmodule Xmlstruct.StructToXmerlConversions do
+  @moduledoc """
+  Functions for converting Elixir structs to Erlang Xmerl tuples.
+  """
+
+  def convert_attribute(attr) do
+    attr_rec = {
+      :xmlAttribute,
+      attr.name,
+      attr.expanded_name,
+      attr.nsinfo,
+      attr.namespace,
+      attr.parents,
+      attr.pos,
+      attr.language,
+      attr.value,
+      attr.normalized,
+    }
+    attr_rec
+  end
+
+  def convert_comment(item) do
+    {
+      :xmlComment,
+      item.parents,
+      item.pos,
+      item.language,
+      item.value,
+    }
+  end
+
+  def convert_element(item) do
+    {
+      :xmlElement,
+      item.name,
+      item.expanded_name,
+      item.nsinfo,
+      convert_namespace(item.namespace),
+      item.parents,
+      item.pos,
+      Enum.map(item.attributes, fn attr ->
+        convert_attribute(attr)
+      end),
+      convert_element_content(item.content),
+      item.language,
+      item.xmlbase,
+      item.elementdef,
+    }
+  end
+
+  def convert_element_content(items) do
+    Enum.map(items, fn item ->
+      case item do
+        %Xmlstruct.Text{} ->
+          convert_text(item)
+        %Xmlstruct.Element{} ->
+          convert_element(item)
+        %Xmlstruct.Comment{} ->
+          convert_comment(item)
+      end
+    end)
+  end
+
+  def convert_namespace(item) do
+    {
+      :xmlNamespace,
+      item.default,
+      item.nodes,
+    }
+  end
+
+  def convert_text(item) do
+    {
+      :xmlText,
+      item.parents,
+      item.pos,
+      item.language,
+      item.value,
+      item.type,
+    }
+  end
+
+
 end
 
 defmodule Xmlstruct.Utils do
@@ -229,13 +311,13 @@ defmodule Xmlstruct.Utils do
 
   Public functions:
 
-  - `convert(path)` -- Convert an XML document/file to Elixir struct.
+  - `convert_to_struct(path)` -- Convert an XML document/file to Elixir struct.
     to an Elixir struct.
 
-  - `convert(xmerl_rec)` -- Convert an element tree created by SweetXml.parse
+  - `convert_to_struct(xmerl_rec)` -- Convert an element tree created by SweetXml.parse
     to an Elixir struct.
 
-  - `convert_string` -- Convert XML string to Elixir struct.
+  - `convert_string_to_struct` -- Convert XML string to Elixir struct.
 
   - `get_xmerl_tree` -- Create the Xmerl tree from an XML file using SweetXml.
 
@@ -248,14 +330,15 @@ defmodule Xmlstruct.Utils do
   - `write_element_tree_to_file` -- Write the tags (names) of the
     elements in an element tree to a file.
 
-  - `walk_tree` -- Walk an element tree.  Call a function on each element.
-
   - `tree_to_stream` -- Create a stream of all the elements in a tree.
 
   - `tree_to_list` -- Create a list of all the elements in a tree.
 
   - `elements_from_content` -- Select and return all the elements
     (children) in the top level content of an element.
+
+  - `each` -- Iterate of all elements in element tree.  Call a
+    function on each element.
 
   - `reduce` -- Invoke `func(element, acc)` on each element in an element tree.
 
@@ -274,23 +357,23 @@ defmodule Xmlstruct.Utils do
 
 
   """
-  @spec convert(Map.t()) :: Map.t()
-  def convert(obj) when is_map(obj) do
+  @spec convert_to_struct(Map.t()) :: Map.t()
+  def convert_to_struct(obj) when is_map(obj) do
     obj
   end
-  @spec convert(String.t()) :: Map.t()
-  def convert(path) when is_binary(path) do
-    #File.stream!(path) |> SweetXml.parse() |> convert()
-    get_xmerl_tree(path) |> convert()
+  @spec convert_to_struct(String.t()) :: Map.t()
+  def convert_to_struct(path) when is_binary(path) do
+    #File.stream!(path) |> SweetXml.parse() |> convert_to_struct()
+    get_xmerl_tree(path) |> convert_to_struct()
   end
-  @spec convert(Tuple.t()) :: Map.t()
-  def convert(tree) do
+  @spec convert_to_struct(Tuple.t()) :: Map.t()
+  def convert_to_struct(tree) do
     key = elem(tree, 0)
     case key do
       :xmlElement ->
-        Xmlstruct.Conversions.convert_element(tree)
+        Xmlstruct.XmerlToStructConversions.convert_element(tree)
       :xmlAttribute ->
-        Xmlstruct.Conversions.convert_attribute(tree)
+        Xmlstruct.XmerlToStructConversions.convert_attribute(tree)
       _ ->
         {:error, "Not an Xmerl record/tuple"}
     end
@@ -302,13 +385,13 @@ defmodule Xmlstruct.Utils do
   ## Examples
 
       iex> text = File.read!("path/to/document.xml")
-      iex> element = Xmlstruct.Utils.convert_string(text)
+      iex> element = Xmlstruct.Utils.convert_string_to_struct(text)
       iex> IO.puts(element.name)
   
   """
-  @spec convert(String.t()) :: Map.t()
-  def convert_string(text) do
-    text |> SweetXml.parse() |> convert()
+  @spec convert_string_to_struct(String.t()) :: Map.t()
+  def convert_string_to_struct(text) do
+    text |> SweetXml.parse() |> convert_to_struct()
   end
 
   @doc """
@@ -326,6 +409,18 @@ defmodule Xmlstruct.Utils do
     tree = File.stream!(file_path) |> SweetXml.parse()
     tree
   end
+
+#  @doc """
+#  Convert an element struct tree to an xmerl record.
+#
+#  ## Examples
+#
+#  """
+#  @spec convert_to_xmerlrec(Map.t()) :: Tuple.t()
+#  def convert_to_xmerlrec(element) do
+#    record = StructToXmerlConversions.convert_element(element)
+#    record
+#  end
 
   @doc """
   Show the content of the top level element in an element tree.
@@ -391,27 +486,6 @@ defmodule Xmlstruct.Utils do
     writer = fn (item) -> IO.write(device, item <> "\n") end
     show_element_tree(el, "", writer)
     File.close(device)
-  end
-
-  @doc """
-  Walk an element tree.  Call a function on each element.
-
-  ## Examples
-
-      element = Xmlstruct.Utils.Test.test01("Data/test02.xml")
-      Xmlstruct.Utils.walk_tree(element, fn el ->
-        IO.puts("----\\nelement: \#{el.name}")
-        el.attributes
-        |> Enum.each(
-          fn attr ->
-            IO.puts("name: \#{attr.name}  value: \#{attr.value}")
-          end)
-      end)
-
-  """
-  def walk_tree(element, func) do
-    strm = tree_to_stream(element)
-    Enum.each(strm, func)
   end
 
   @doc """
@@ -487,8 +561,8 @@ defmodule Xmlstruct.Utils do
   Invoke `func(element, acc)` on each element in an element tree.
 
   Function `func` should take two arguments: an `Xmlstruct.Element`
-  and an accumulator.  The initial value of the accumulator
-  is `acc`.
+  and an accumulator, and should return an updated accumulator.  The
+  initial value of the accumulator is `acc`.
 
   ## Examples
 
@@ -511,6 +585,51 @@ defmodule Xmlstruct.Utils do
     reduce_aux(elements, acc2, func)
   end
 
+  @doc """
+  Walk the element tree and invoke `func(element)` on each element.
+
+  Function `func` should take a single argument: an `Xmlstruct.Element`.
+
+  ## Examples
+
+      iex> root_element |> Xmlstruct.Utils.reduce(0, fn (el) -> IO.puts(el.name) end)
+
+  """
+  @spec walk_tree(Map.t(), (Map.t() -> any())) :: :ok
+  def walk_tree(element, func) do
+    walk_tree_aux([element], func)
+  end
+
+  defp walk_tree_aux([], _func), do: :ok
+  defp walk_tree_aux([element | elements], func) do
+    func.(element)
+    walk_tree_aux(
+      Xmlstruct.Utils.elements_from_content(element), func)
+    walk_tree_aux(elements, func)
+  end
+
+  @doc """
+  Iterate of all elements in element tree.  Call a function on each element.
+
+  ## Examples
+
+      root_element = Xmlstruct.Utils.Test.test01("Data/test02.xml")
+      Xmlstruct.Utils.each(root_element, fn el ->
+        IO.puts("----\\nelement: \#{el.name}")
+        el.attributes
+        |> Enum.each(
+          fn attr ->
+            IO.puts("name: \#{attr.name}  value: \#{attr.value}")
+          end)
+      end)
+
+  """
+  @spec each(Map.t(), (Map.t() -> any())) :: :ok
+  def each(element, func) do
+    strm = tree_to_stream(element)
+    Enum.each(strm, func)
+  end
+
 end
 
 defmodule Xmlstruct.Test do
@@ -524,8 +643,8 @@ defmodule Xmlstruct.Test do
 
   """
   def print_all_tags(path) do
-    element = Xmlstruct.Utils.convert(path)
-    Xmlstruct.Utils.walk_tree(element, fn (el) ->
+    element = Xmlstruct.Utils.convert_to_struct(path)
+    Xmlstruct.Utils.each(element, fn (el) ->
       IO.puts("tag: #{el.name}") end)
     #element
   end
