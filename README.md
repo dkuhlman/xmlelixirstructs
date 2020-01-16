@@ -53,7 +53,7 @@ iex> h Xmlstruct.Utils.reduce
 Convert an XML document to Elixir structs:
 
 ```elixir
-ex(4)> element = Xmlstruct.Utils.convert("path/to/xml/document.xml")
+iex> element = Xmlstruct.Utils.convert("path/to/xml/document.xml")
 ```
 
 Convert an XML document in a string to Elixir structs:
@@ -62,6 +62,20 @@ Convert an XML document in a string to Elixir structs:
 iex> text = File.read!("path/to/document.xml")
 iex> element = Xmlstruct.Utils.convert_string(text)
 iex> IO.puts(element.name)
+```
+
+Print out the names (tags) of each of the elements in a document:
+
+```elixir
+iex> element = Xmlstruct.Utils.convert("path/to/xml/document.xml")
+iex> element |> Xmlstruct.Utils.each(fn el -> IO.puts(el.name) end)
+```
+
+Serialize (export) an XML structure tree to a charlist:
+
+```elixir
+iex> characters = Xmlstruct.Utils.export_struct(root_element)
+iex> IO.puts(characters)
 ```
 
 Look in module `Xmlstruct.Utils` for additional helper functions.

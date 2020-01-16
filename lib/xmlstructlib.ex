@@ -319,6 +319,10 @@ defmodule Xmlstruct.Utils do
 
   - `convert_string_to_struct` -- Convert XML string to Elixir struct.
 
+  - `export/1` -- Serialize XML Elixir struct.  Return as a charlist.
+
+  - `export/2` -- Serialize XML Elixir struct.  Write to file at `path`.
+
   - `get_xmerl_tree` -- Create the Xmerl tree from an XML file using SweetXml.
 
   - `show_content` -- Show the content of the top level element in
@@ -392,6 +396,40 @@ defmodule Xmlstruct.Utils do
   @spec convert_string_to_struct(String.t()) :: Map.t()
   def convert_string_to_struct(text) do
     text |> SweetXml.parse() |> convert_to_struct()
+  end
+
+  @doc """
+  Serialize XML Elixir struct.  Return as a string.
+
+  ## Examples
+  
+      iex> xml_struct = Xmlstruct.Utils.convert_to_struct("path/to/doc.xml")
+      iex> content = Xmlstruct.Utils.export_struct(xml_struct)
+      iex> IO.puts(content)
+
+  """
+  @spec export_struct(Map.t()) :: charlist()
+  def export_struct(element) do
+    xmerl_record = Xmlstruct.StructToXmerlConversions.convert_element(element)
+    List.flatten(:xmerl.export([xmerl_record], :xmerl_xml))
+  end
+
+  @doc """
+  Serialize XML Elixir struct.  Write to file at `path`.
+
+  ## Examples
+  
+      iex> xml_struct = Xmlstruct.Utils.convert_to_struct("path/to/doc.xml")
+      iex> Xmlstruct.Utils.export_struct("path/to/new/doc.xml", xml_struct)
+      :ok
+
+  """
+  @spec export_struct(Path.t(), Map.t()) :: :ok
+  def export_struct(path, element) do
+    xmerl_record = Xmlstruct.StructToXmerlConversions.convert_element(element) 
+    content = :io_lib.format(
+      :lists.flatten(:xmerl.export([xmerl_record], :xmerl_xml)), [])
+    File.write(path, content)
   end
 
   @doc """
