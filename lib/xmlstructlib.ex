@@ -338,18 +338,19 @@ defmodule Xmlstruct.MapAndCopy do
   Functions for converting Elixir structs to Erlang Xmerl tuples.
   """
 
-  def map_attribute(attr, funcs) do
-    new_item = %Xmlstruct.Attribute{
-      name: attr.name,
-      expanded_name: attr.expanded_name,
-      nsinfo: attr.nsinfo,
-      namespace: attr.namespace,
-      parents: attr.parents,
-      pos: attr.pos,
-      language: attr.language,
-      value: attr.value,
-      normalized: attr.normalized,
-    }
+  def map_attribute(item, funcs) do
+#    new_item = %Xmlstruct.Attribute{
+#      name: attr.name,
+#      expanded_name: attr.expanded_name,
+#      nsinfo: attr.nsinfo,
+#      namespace: attr.namespace,
+#      parents: attr.parents,
+#      pos: attr.pos,
+#      language: attr.language,
+#      value: attr.value,
+#      normalized: attr.normalized,
+#    }
+    new_item = item
     if is_nil(funcs.attribute_func) do
       new_item
     else
@@ -358,31 +359,41 @@ defmodule Xmlstruct.MapAndCopy do
   end
 
   def map_comment(item, _funcs) do
-    new_item = %Xmlstruct.Comment{
-      parents: item.parents,
-      pos: item.pos,
-      language: item.language,
-      value: item.value,
-    }
+#    new_item = %Xmlstruct.Comment{
+#      parents: item.parents,
+#      pos: item.pos,
+#      language: item.language,
+#      value: item.value,
+#    }
+    new_item = item
     new_item
   end
 
   def map_element(item, funcs) do
-    new_item = %Xmlstruct.Element{
-      name: item.name,
-      expanded_name: item.expanded_name,
-      nsinfo: item.nsinfo,
-      namespace: map_namespace(item.namespace, funcs),
-      parents: item.parents,
-      pos: item.pos,
+#    new_item = %Xmlstruct.Element{
+#      name: item.name,
+#      expanded_name: item.expanded_name,
+#      nsinfo: item.nsinfo,
+#      namespace: map_namespace(item.namespace, funcs),
+#      parents: item.parents,
+#      pos: item.pos,
+#      attributes: Enum.map(item.attributes, fn attr ->
+#        map_attribute(attr, funcs)
+#      end),
+#      content: map_element_content(item.content, funcs),
+#      language: item.language,
+#      xmlbase: item.xmlbase,
+#      elementdef: item.elementdef,
+#    }
+    #new_item = item
+    new_item = %{item |
+      #namespace: map_namespace(item.namespace, funcs),
       attributes: Enum.map(item.attributes, fn attr ->
         map_attribute(attr, funcs)
       end),
       content: map_element_content(item.content, funcs),
-      language: item.language,
-      xmlbase: item.xmlbase,
-      elementdef: item.elementdef,
     }
+    #new_item = item
     if is_nil(funcs.element_func) do
       new_item
     else
@@ -403,22 +414,24 @@ defmodule Xmlstruct.MapAndCopy do
     end)
   end
 
-  def map_namespace(item, _funcs) do
-    new_item = %Xmlstruct.Namespace{
-      default: item.default,
-      nodes: item.nodes,
-    }
-    new_item
-  end
+#  def map_namespace(item, _funcs) do
+##    new_item = %Xmlstruct.Namespace{
+##      default: item.default,
+##      nodes: item.nodes,
+##    }
+#    new_item = item
+#    new_item
+#  end
 
   def map_text(item, funcs) do
-    new_item = %Xmlstruct.Text{
-      parents: item.parents,
-      pos: item.pos,
-      language: item.language,
-      value: item.value,
-      type: item.type,
-    }
+#    new_item = %Xmlstruct.Text{
+#      parents: item.parents,
+#      pos: item.pos,
+#      language: item.language,
+#      value: item.value,
+#      type: item.type,
+#    }
+    new_item = item
     if is_nil(funcs.text_func) do
       new_item
     else
@@ -797,17 +810,20 @@ defmodule Xmlstruct.Utils do
   Apply `element_func` to each element in the tree.
   Apply `attribute_func` to each attribute in the tree.
   Apply `text_func` to each text in the tree.
+  Any of these maybe `nil`, which means copy the object without that particular change.
+  If all functions are `nil`, calling this function effectively produces
+  a copy.
 
   ## Examples
   
-      text_func = fn item -> %{item |
-        value: String.upcase(to_string(item.value)),
-      } end
       element_func = fn item ->
         name = if is_atom(item.name), do: Atom.to_string(item.name), else: item.name
         %{item | name: String.upcase(name) }
       end
-      new_tree = Xmlstruct.Utils.map_tree(tree, element_func, text_func)
+      text_func = fn item -> %{item |
+        value: String.upcase(to_string(item.value)),
+      } end
+      new_tree = Xmlstruct.Utils.map_tree(tree, element_func, nil, text_func)
 
   """
   @spec map_tree(
@@ -849,7 +865,10 @@ defmodule Xmlstruct.Test do
   end
 
   def test_modify(tree) do
-    display_func = fn new_tree ->
+    display_func = fn (new_tree, msg) ->
+      IO.puts("---------------------------------")
+      IO.puts("* #{msg}")
+      IO.puts("---------------------------------")
       Xmlstruct.Utils.each(new_tree, fn item ->
         IO.puts("name: #{item.name}")
         Enum.each(item.attributes, fn attr ->
@@ -893,10 +912,9 @@ defmodule Xmlstruct.Test do
       name = if is_atom(item.name), do: Atom.to_string(item.name), else: item.name
       %{item | name: String.upcase(name) }
     end
-    display_func.(tree)
+    display_func.(tree, "Before")
     new_tree = Xmlstruct.Utils.map_tree(tree, element_func, attribute_func, text_func)
-    IO.puts("---------------------------------")
-    display_func.(new_tree)
+    display_func.(new_tree, "After")
     :ok
   end
 

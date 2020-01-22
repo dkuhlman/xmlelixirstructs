@@ -24,7 +24,7 @@ see a list of the fields in that element.
 Add `xmlelixirstructs` to your `mix` project by adding the following
 to your `mix.exs` file under `deps`:
 
-```elixir
+```
 def deps do
   [
     {:xmlelixirstructs, github: "dkuhlman/xmlelixirstructs"},
@@ -110,3 +110,61 @@ File.stream!(path)
 |> Enum.each(fn el -> IO.puts(el.name) end)
 ```
 
+This example is a function that modifies items throughout an element
+(Struct) tree:
+
+```elixir
+def test_modify(tree) do
+  display_func = fn (new_tree, msg) ->
+    IO.puts("---------------------------------")
+    IO.puts("* #{msg}")
+    IO.puts("---------------------------------")
+    Xmlstruct.Utils.each(new_tree, fn item ->
+      IO.puts("name: #{item.name}")
+      Enum.each(item.attributes, fn attr ->
+        IO.puts("    attribute -- name: #{attr.name}  value: #{attr.value}")
+      end)
+      Enum.each(item.content, fn child ->
+        case child do
+          %Xmlstruct.Text{} ->
+            value = if is_list(child.value) do
+              to_string(child.value)
+            else
+              child.value
+            end
+            if String.trim(value) !== "" do
+              IO.puts("    text: \"#{value}\"")
+            end
+          _ -> :ok
+        end
+      end)
+    end)
+  end
+  text_func = fn item -> %{item |
+    value: String.upcase(to_string(item.value)),
+  } end
+  attribute_func = fn item ->
+    name = if is_atom(item.name) do
+      to_string(item.name)
+    else
+      item.name
+    end
+    value = if is_list(item.value) do
+      to_string(item.value)
+    else
+      item.value
+    end
+    %{item |
+    name: String.upcase(name),
+    value: String.upcase(value),
+  } end
+  element_func = fn item ->
+    name = if is_atom(item.name), do: Atom.to_string(item.name), else: item.name
+    %{item | name: String.upcase(name) }
+  end
+  display_func.(tree, "Before")
+  new_tree = Xmlstruct.Utils.map_tree(tree, element_func, attribute_func, text_func)
+  display_func.(new_tree, "After")
+  :ok
+end
+```
