@@ -443,7 +443,7 @@ end
 
 defmodule Xmlstruct.Utils do
   @moduledoc """
-  Utility and helper funtions for converting Xmerl records to Elixir structs.
+  Utility and helper funtions for converting Xmerl records to Elixir structs and processing those structs.
 
   Public functions:
 
@@ -480,9 +480,25 @@ defmodule Xmlstruct.Utils do
   - `each` -- Iterate of all elements in element tree.  Call a
     function on each element.
 
+  - `map_tree` -- Reconstruct an element tree, applying `element_func`,
+    `attribute_func`, and `text_func` along the way.
+
   - `reduce` -- Invoke `func(element, acc)` on each element in an element tree.
 
+  - `filter_tree` -- Return a list of elements from the element tree for
+    which `pred` is true.
+
+  - `find_in_tree` -- Find a single (the first) element in a tree that
+    satisfies pred.
+
+  - `xpath` -- Do an xpath search of an xmerl record tree.  Return a
+    list of structs corresponding to records found.
+
   """
+
+  require XmerlRecs
+
+  @type element :: Map.t()
 
   @doc """
   Convert an element tree created by SweetXml.parse to an Elixir struct.
@@ -495,18 +511,17 @@ defmodule Xmlstruct.Utils do
 
       Xml.Struct.convert("path/to/doc.xml")
 
-
   """
-  @spec convert_to_struct(Map.t()) :: Map.t()
+  @spec convert_to_struct(element) :: element
   def convert_to_struct(obj) when is_map(obj) do
     obj
   end
-  @spec convert_to_struct(String.t()) :: Map.t()
+  @spec convert_to_struct(String.t()) :: element
   def convert_to_struct(path) when is_binary(path) do
     #File.stream!(path) |> SweetXml.parse() |> convert_to_struct()
     get_xmerl_tree(path) |> convert_to_struct()
   end
-  @spec convert_to_struct(Tuple.t()) :: Map.t()
+  @spec convert_to_struct(tuple) :: element
   def convert_to_struct(tree) do
     key = elem(tree, 0)
     case key do
@@ -529,7 +544,7 @@ defmodule Xmlstruct.Utils do
       iex> IO.puts(element.name)
   
   """
-  @spec convert_string_to_struct(String.t()) :: Map.t()
+  @spec convert_string_to_struct(String.t()) :: element
   def convert_string_to_struct(text) do
     text |> SweetXml.parse() |> convert_to_struct()
   end
@@ -544,7 +559,7 @@ defmodule Xmlstruct.Utils do
       iex> IO.puts(content)
 
   """
-  @spec export_struct(Map.t()) :: charlist()
+  @spec export_struct(element) :: charlist()
   def export_struct(element) do
     xmerl_record = Xmlstruct.StructToXmerlConversions.convert_element(element)
     List.flatten(:xmerl.export([xmerl_record], :xmerl_xml))
@@ -560,7 +575,7 @@ defmodule Xmlstruct.Utils do
       :ok
 
   """
-  @spec export_struct(Path.t(), Map.t()) :: :ok
+  @spec export_struct(Path.t(), element) :: :ok
   def export_struct(path, element) do
     xmerl_record = Xmlstruct.StructToXmerlConversions.convert_element(element) 
     content = :io_lib.format(
@@ -578,23 +593,11 @@ defmodule Xmlstruct.Utils do
       element_recs = SweetXml.xpath(rec, ~x".//tag-name"l)
 
   """
-  @spec get_xmerl_tree(String.t()) :: Tuple.t()
+  @spec get_xmerl_tree(String.t()) :: tuple
   def get_xmerl_tree(file_path) when is_binary(file_path) do
     tree = File.stream!(file_path) |> SweetXml.parse()
     tree
   end
-
-#  @doc """
-#  Convert an element struct tree to an xmerl record.
-#
-#  ## Examples
-#
-#  """
-#  @spec convert_to_xmerlrec(Map.t()) :: Tuple.t()
-#  def convert_to_xmerlrec(element) do
-#    record = StructToXmerlConversions.convert_element(element)
-#    record
-#  end
 
   @doc """
   Show the content of the top level element in an element tree.
@@ -746,7 +749,7 @@ defmodule Xmlstruct.Utils do
       iex> Xmlstruct.Utils.reduce(root, 0, fn (el, acc) -> acc + length(el.attributes) end)
 
   """
-  @spec reduce(Map.t(), any(), (Map.t(), any() -> any())) :: any()
+  @spec reduce(element, any(), (element, any() -> any())) :: any()
   def reduce(element, acc, func) do
     reduce_aux([element], acc, func)
   end
@@ -760,6 +763,40 @@ defmodule Xmlstruct.Utils do
   end
 
   @doc """
+  Return a list of elements from the element tree for which `pred` is true.
+
+  ## Examples
+
+      iex> Xmlstruct.Utils.filter_tree(root_element, fn el -> el.name == "ddd" end)
+
+  """
+  @spec filter_tree(element, (element -> boolean)) :: [element]
+  def filter_tree(tree, pred) do
+    reduce(tree, [], fn (el, acc) ->
+      if pred.(el) do
+        [el | acc]
+      else
+        acc
+      end
+    end)
+  end
+
+  @doc """
+  Find a single (the first) element in a tree that satisfies pred.
+
+  ## Examples
+
+  """
+  @spec find_in_tree(element, (element -> boolean)) :: element | :error
+  def find_in_tree(tree, pred) do
+    els = filter_tree(tree, pred)
+    case els do
+      [el | _] -> el
+      _ -> :error
+    end
+  end
+
+  @doc """
   Walk the element tree and invoke `func(element)` on each element.
 
   Function `func` should take a single argument: an `Xmlstruct.Element`.
@@ -769,7 +806,7 @@ defmodule Xmlstruct.Utils do
       iex> root_element |> Xmlstruct.Utils.reduce(0, fn (el) -> IO.puts(el.name) end)
 
   """
-  @spec walk_tree(Map.t(), (Map.t() -> any())) :: :ok
+  @spec walk_tree(element, (element -> any())) :: :ok
   def walk_tree(element, func) do
     walk_tree_aux([element], func)
   end
@@ -798,7 +835,7 @@ defmodule Xmlstruct.Utils do
       end)
 
   """
-  @spec each(Map.t(), (Map.t() -> any())) :: :ok
+  @spec each(element, (element -> any())) :: :ok
   def each(element, func) do
     strm = tree_to_stream(element)
     Enum.each(strm, func)
@@ -827,11 +864,11 @@ defmodule Xmlstruct.Utils do
 
   """
   @spec map_tree(
-    Map.t(),
-    (Map.t() -> Map.t),
-    (Map.t() -> Map.t),
-    (Map.t() -> Map.t)) ::
-    Map.t() | {:error, String.t()}
+    element,
+    (element -> element),
+    (element -> element),
+    (element -> element)) ::
+    element | {:error, String.t()}
   def map_tree(tree, element_func, attribute_func, text_func) do
     funcs = %Xmlstruct.FuncContainer{
       element_func: element_func,
@@ -843,6 +880,30 @@ defmodule Xmlstruct.Utils do
         Xmlstruct.MapAndCopy.map_element(tree, funcs)
       _ -> {:error, "Need an %Xmlstruct.Element{}"}
     end
+  end
+
+  @doc """
+  Do an xpath search of an xmerl record tree.  Return a list of structs corresponding to records found.
+
+  ## Examples
+  
+      iex> rec_root = Xmlstruct.Utils.get_xmerl_tree("path/to/xml/doc.xml")
+      iex> el_root = Xmlstruct.Utils.convert_to_struct(rec_root)
+      iex> Xmlstruct.Utils.xpath(rec_root, el_root, "//bbb[@size=\"34\"]")
+
+  """
+  @spec xpath(tuple, element, String.t()) :: [element]
+  def xpath(xmerl_tree, element_tree, path) do
+    path_spec = SweetXml.sigil_x(path, 'l')
+    recs = SweetXml.xpath(xmerl_tree, path_spec)
+    elements = Enum.map(recs, fn rec ->
+      find_in_tree(element_tree, fn el ->
+        rec_name = XmerlRecs.xmlElement(rec, :name)
+        rec_parents = XmerlRecs.xmlElement(rec, :parents)
+        el.name == to_string(rec_name) and el.parents == rec_parents
+      end)
+    end)
+    elements
   end
 
 end

@@ -44,7 +44,7 @@ Where to find stuff:
 The following will show you a list of helper functions:
 
 ```elixir
-iex> h Xmlstruct.Utils.reduce
+iex> h Xmlstruct.Utils
 ```
 
 
