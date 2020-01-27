@@ -883,13 +883,19 @@ defmodule Xmlstruct.Utils do
   end
 
   @doc """
-  Do an xpath search of an xmerl record tree.  Return a list of structs corresponding to records found.
+  Do an xpath search of an xmerl record tree.  Return a list of structs (elements) corresponding to records found.
+
+  For information on the XML Path (xpath) language, see:
+
+  - XML Path Language (XPath) 3.1 -- https://www.w3.org/TR/2017/REC-xpath-31-20170321/
+
+  - XPath expressions and syntax -- https://www.w3.org/TR/2017/REC-xpath-31-20170321/#id-path-expressions
 
   ## Examples
   
       iex> rec_root = Xmlstruct.Utils.get_xmerl_tree("path/to/xml/doc.xml")
       iex> el_root = Xmlstruct.Utils.convert_to_struct(rec_root)
-      iex> Xmlstruct.Utils.xpath(rec_root, el_root, "//bbb[@size=\"34\"]")
+      iex> elements = Xmlstruct.Utils.xpath(rec_root, el_root, "//bbb[@size=\"34\"]")
 
   """
   @spec xpath(tuple, element, String.t()) :: [element]
