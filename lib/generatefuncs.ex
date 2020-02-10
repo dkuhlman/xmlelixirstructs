@@ -6,7 +6,7 @@ defmodule GenerateFuncs do
 
   @type device :: atom | pid
 
-  @type_names [:attribute, :comment, :element, :text, ]
+  @type_names [:attribute, :comment, :element, :namespace, :text, ]
 
   @doc """
   Write out source code for accessor functions for Xmerl records.
@@ -34,7 +34,7 @@ defmodule GenerateFuncs do
       name = to_string(item)
       cap_name = String.capitalize(name)
       #ident = to_atom("xml#{String.capitalize(to_string(item))}")
-      wrt.("defmodule Xml#{name} do")
+      wrt.("defmodule Xml.#{cap_name} do")
       wrt.("  require XmerlRecs")
       
       Record.extract(

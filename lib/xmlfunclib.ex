@@ -1,4 +1,4 @@
-defmodule Xmlattribute do
+defmodule Xml.Attribute do
   require XmerlRecs
   def get_name(item), do: XmerlRecs.xmlAttribute(item, :name)
   def get_expanded_name(item), do: XmerlRecs.xmlAttribute(item, :expanded_name)
@@ -11,7 +11,7 @@ defmodule Xmlattribute do
   def get_normalized(item), do: XmerlRecs.xmlAttribute(item, :normalized)
 end
 
-defmodule Xmlcomment do
+defmodule Xml.Comment do
   require XmerlRecs
   def get_parents(item), do: XmerlRecs.xmlComment(item, :parents)
   def get_pos(item), do: XmerlRecs.xmlComment(item, :pos)
@@ -19,7 +19,7 @@ defmodule Xmlcomment do
   def get_value(item), do: XmerlRecs.xmlComment(item, :value)
 end
 
-defmodule Xmlelement do
+defmodule Xml.Element do
   require XmerlRecs
   def get_name(item), do: XmerlRecs.xmlElement(item, :name)
   def get_expanded_name(item), do: XmerlRecs.xmlElement(item, :expanded_name)
@@ -34,7 +34,13 @@ defmodule Xmlelement do
   def get_elementdef(item), do: XmerlRecs.xmlElement(item, :elementdef)
 end
 
-defmodule Xmltext do
+defmodule Xml.Namespace do
+  require XmerlRecs
+  def get_default(item), do: XmerlRecs.xmlNamespace(item, :default)
+  def get_nodes(item), do: XmerlRecs.xmlNamespace(item, :nodes)
+end
+
+defmodule Xml.Text do
   require XmerlRecs
   def get_parents(item), do: XmerlRecs.xmlText(item, :parents)
   def get_pos(item), do: XmerlRecs.xmlText(item, :pos)
