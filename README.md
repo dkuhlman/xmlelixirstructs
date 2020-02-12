@@ -47,6 +47,16 @@ The following will show you a list of helper functions:
 iex> h Xmlstruct.Utils
 ```
 
+## Additional capabilities
+
+This repo also has support for:
+
+- Generating source code for XML field access functions.  See
+  `lib/generatefuncs.ex`.
+
+- Generating access functions through Elixir metaprogramming.  See:
+  `lib/xmlmetaprogramming.ex`.
+
 
 ## Examples
 
